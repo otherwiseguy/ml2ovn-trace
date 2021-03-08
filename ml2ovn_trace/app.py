@@ -1,19 +1,20 @@
 from collections import namedtuple
-import subprocess;
+import subprocess
 import sys
 
 import click
 import openstack
 
-# ml2ovn-trace --from server=vm1 --to server=vm2 --via router=net1-router --ttl=64
+# ml2ovn-trace --from server=vm1 --to server=vm2 --via router=net1-router
 # pulls
-#  logical_switch from "from" object
-#  ip.src/ip.dst from "from" object
-#  eth.dst from "via" object
+#  logical_switch/inport from "from" object
+#  ip.src/ip.dst from "from" object (and eth.dst if no via)
 #  ip4.dest from "to" object
+#  eth.dst from "via" object
 #
 
 conn = None
+
 
 class ServerInterface:
     def __init__(self, query, network=None):
@@ -35,9 +36,9 @@ class ServerInterface:
         if not self._instance:
             matching_vms = conn.search_servers(self.query)
             if len(matching_vms) < 1:
-                raise Exception("Server not found")
+                raise Exception('Server not found')
             elif len(matching_vms) > 1:
-                raise Exception("Multiple VMs match %s" % self.query)
+                raise Exception('Multiple VMs match %s' % self.query)
             self._instance = matching_vms[0]
         return self._instance
 
@@ -45,7 +46,7 @@ class ServerInterface:
     def network(self):
         if not self._network:
             if len(self.instance.addresses) != 1:
-                raise Exception("Server on multiple networks, must supply --network")
+                raise Exception('Server on multiple networks, add --network')
             self._network = next(iter(key for key in self.instance.addresses))
         return self._network
 
@@ -73,8 +74,8 @@ class ServerInterface:
     @property
     def inport(self):
         if not self._inport:
-            inports = conn.search_ports(filters={'device_id': self.instance.id})
-            self._inport = inports[0].id
+            ports = conn.search_ports(filters={'device_id': self.instance.id})
+            self._inport = ports[0].id
         return self._inport
 
 
@@ -83,7 +84,9 @@ class RouterInterface:
         self.query = query
         self.network = conn.search_networks(network)[0]
         self.router = conn.search_routers(query)[0]
-        self.interface = conn.search_ports(filters={'device_id': self.router.id, 'network_id': self.network.id})[0]
+        self.interface = conn.search_ports(
+            filters={'device_id': self.router.id,
+                     'network_id': self.network.id})[0]
         self._ip = None
         self._mac = None
 
@@ -101,22 +104,26 @@ def split_equals(ctx, param, value):
         return
     try:
         key, val = value.split('=', 2)
-        return namedtuple("%s_opt" % param.name, ['obj', 'value'])(key, val)
+        return namedtuple('%s_opt' % param.name, ['obj', 'value'])(key, val)
     except ValueError:
-        raise click.BadParameter("must be in the format object=value")
+        raise click.BadParameter('must be in the format object=value')
+
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
 @click.option('--cloud', '-c', required=True, default='devstack')
 @click.option('--from', '-f', 'from_', callback=split_equals, required=True,
-              help="Object to fill eth.src/ip4.src from, e.g. server=vm1")
+              help='Object to fill eth.src/ip4.src from, e.g. server=vm1')
 @click.option('--to', '-t', callback=split_equals, required=True,
-              help="Object to fill ip4.dst and possibly eth.dst if no --via, e.g. server=vm2")
+              help='Object to fill ip4.dst and possibly eth.dst if no --via, '
+                   'e.g. server=vm2')
 @click.option('--via', '-V', callback=split_equals, required=False,
-              help="Object to override eth.dst with, e.g. router=net1-router")
+              help='Object to override eth.dst with, e.g. router=net1-router')
 @click.option('--network', '-n', 'network', required=False,
-              help="Network to limit interfaces to. If not passed, and objects only have one, it will be used, e.g. network=net1")
-@click.option('--microflow', '-m', help='Additional microflow string to append to the one generated', default='')
-@click.option('--verbose', '-v', is_flag=True, help="Enables verbose mode")
+              help='Network to limit interfaces to. If not passed, and '
+                   'objects only have one, it will be used, e.g. network=net1')
+@click.option('--microflow', '-m', default='',
+              help='Additional microflow text to append to the one generated')
+@click.option('--verbose', '-v', is_flag=True, help='Enables verbose mode')
 @click.argument('ovntrace_args', nargs=-1, type=click.UNPROCESSED)
 def trace(cloud, from_, to, via, network, microflow, verbose, ovntrace_args):
     global conn
@@ -151,11 +158,17 @@ def trace(cloud, from_, to, via, network, microflow, verbose, ovntrace_args):
             dst_mac = router.mac
 
     # need to determine inport for from object
-    generated_flow = 'inport == "%s" && eth.src == %s && eth.dst == %s && ip4.src == %s && ip4.dst == %s && ip.ttl == 64' % (inport, src_mac, dst_mac, src_ip, dst_ip)
-    microflow = " && ".join(f for f in (generated_flow, microflow) if f)
+    generated_flow = ('inport == "%s" && '
+                      'eth.src == %s && '
+                      'eth.dst == %s && '
+                      'ip4.src == %s && '
+                      'ip4.dst == %s && '
+                      'ip.ttl == 64' % (inport, src_mac, dst_mac,
+                                        src_ip, dst_ip))
+    microflow = ' && '.join(f for f in (generated_flow, microflow) if f)
     args = ('ovn-trace', datapath, microflow) + ovntrace_args
     if verbose:
-        sys.stderr.write("Calling: %s\n" % " ".join(args))
+        sys.stderr.write('Calling: %s\n' % ' '.join(args))
     subprocess.run(args)
 
 
