@@ -9,22 +9,27 @@ Usage
 -----
 ```
 $ ml2ovn-trace --help
-Usage: ml2ovn-trace [OPTIONS]
+Usage: ml2ovn-trace [OPTIONS] [OVNTRACE_ARGS]...
 
 Options:
-  -c, --cloud TEXT    [required]
-  -f, --from TEXT     Object to fill eth.src/ip4.src from, e.g. server=vm1
-                      [required]
+  -c, --cloud TEXT      [required]
+  -f, --from TEXT       Object to fill eth.src/ip4.src from, e.g. server=vm1
+                        [required]
 
-  -t, --to TEXT       Object to fill ip4.dst and possibly eth.dst if no --via,
-                      e.g. server=vm2  [required]
+  -t, --to TEXT         Object to fill ip4.dst and possibly eth.dst if no
+                        --via, e.g. server=vm2  [required]
 
-  -V, --via TEXT      Object to override eth.dst with, e.g. router=net1-router
-  -n, --network TEXT  Network to limit interfaces to. If not passed, and
-                      objects only have one, it will be used, e.g.
-                      network=net1
+  -V, --via TEXT        Object to override eth.dst with, e.g.
+                        router=net1-router
 
-  --help              Show this message and exit.
+  -n, --network TEXT    Network to limit interfaces to. If not passed, and
+                        objects only have one, it will be used, e.g.
+                        network=net1
+
+  -m, --microflow TEXT  Additional microflow string to append to the one
+                        generated
+
+  --help                Show this message and exit.
 ```
 
 
