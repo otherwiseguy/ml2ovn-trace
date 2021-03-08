@@ -1,5 +1,6 @@
 from collections import namedtuple
 import subprocess;
+import sys
 
 import click
 import openstack
@@ -115,8 +116,9 @@ def split_equals(ctx, param, value):
 @click.option('--network', '-n', 'network', required=False,
               help="Network to limit interfaces to. If not passed, and objects only have one, it will be used, e.g. network=net1")
 @click.option('--microflow', '-m', help='Additional microflow string to append to the one generated', default='')
+@click.option('--verbose', '-v', is_flag=True, help="Enables verbose mode")
 @click.argument('ovntrace_args', nargs=-1, type=click.UNPROCESSED)
-def trace(cloud, from_, to, via, network, microflow, ovntrace_args):
+def trace(cloud, from_, to, via, network, microflow, verbose, ovntrace_args):
     global conn
 
     # TODO (twilson) Add configurability on confiuring connecting to te cloud
@@ -151,8 +153,10 @@ def trace(cloud, from_, to, via, network, microflow, ovntrace_args):
     # need to determine inport for from object
     generated_flow = 'inport == "%s" && eth.src == %s && eth.dst == %s && ip4.src == %s && ip4.dst == %s && ip.ttl == 64' % (inport, src_mac, dst_mac, src_ip, dst_ip)
     microflow = " && ".join(f for f in (generated_flow, microflow) if f)
-    print(microflow)
-    subprocess.run(('ovn-trace', datapath, microflow) + ovntrace_args)
+    args = ('ovn-trace', datapath, microflow) + ovntrace_args
+    if verbose:
+        sys.stderr.write("Calling: %s\n" % " ".join(args))
+    subprocess.run(args)
 
 
 if __name__ == '__main__':
