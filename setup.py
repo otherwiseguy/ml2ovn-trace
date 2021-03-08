@@ -10,6 +10,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        ml2ovn-trace=app:trace
+        ml2ovn-trace=ml2ovn_trace.app:trace
     ''',
 )
