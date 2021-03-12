@@ -21,7 +21,7 @@ Options:
   --eth-src OBJECT=VALUE          Object from which to fill eth.src
                                   [required]
 
-  --ip-src OBJECT=VALUE           Object from which to fill ip4.src
+  --ip-src OBJECT=VALUE           Object from which to fill ip.src
                                   [required]
 
   -t, --to OBJECT=VALUE           Fill eth-dst/ip-dst from the same object,
@@ -31,7 +31,7 @@ Options:
                                   Object from which to fill eth.dst
                                   [required]
 
-  --ip-dst OBJECT=VALUE           Object from which to fill ip4.dst
+  --ip-dst OBJECT=VALUE           Object from which to fill ip.dst
                                   [required]
 
   -m, --microflow TEXT            Additional microflow text to append to the
