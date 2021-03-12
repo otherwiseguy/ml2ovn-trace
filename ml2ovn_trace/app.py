@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import ipaddress
 import subprocess
 import sys
 
@@ -36,6 +37,7 @@ class OvnTrace:
 
     @property
     def microflow(self):
+        ip_version = ipaddress.ip_address(self.ip_src).version
         generated_flow = (
             'inport == "{inport}" && '
             'eth.src == {eth_src} && '
@@ -43,8 +45,8 @@ class OvnTrace:
             'eth.dst == {eth_dst} && '
             'ip{ip_dst_v}.dst == {ip_dst} && '
             'ip.ttl == 64'.format(
-                inport=self.inport, eth_src=self.eth_src, ip_src_v=4,
-                ip_src=self.ip_src, eth_dst=self.eth_dst, ip_dst_v=4,
+                inport=self.inport, eth_src=self.eth_src, ip_src_v=ip_version,
+                ip_src=self.ip_src, eth_dst=self.eth_dst, ip_dst_v=ip_version,
                 ip_dst=self.ip_dst))
         return ' && '.join(f for f in (generated_flow, self.extra_flow) if f)
 
@@ -217,13 +219,13 @@ ToOpt = ObjEqValueOpt('to')
 @click.option('--eth-src', type=FromOpt, cls=RequiredUnless, unless='from_',
               help='Object from which to fill eth.src')
 @click.option('--ip-src', type=FromOpt, cls=RequiredUnless, unless='from_',
-              help='Object from which to fill ip4.src')
+              help='Object from which to fill ip.src')
 @click.option('--to', '-t', type=ToOpt,
               help='Fill eth-dst/ip-dst from the same object, e.g. server=vm2')
 @click.option('--eth-dst', '--via', '-v', type=ToOpt, cls=RequiredUnless,
               unless='to', help='Object from which to fill eth.dst')
 @click.option('--ip-dst', type=ToOpt, cls=RequiredUnless, unless='to',
-              help='Object from which to fill ip4.dst')
+              help='Object from which to fill ip.dst')
 @click.option('--microflow', '-m', default='',
               help='Additional microflow text to append to the one generated')
 @click.option('--verbose', '-v', is_flag=True, help='Enables verbose mode')
