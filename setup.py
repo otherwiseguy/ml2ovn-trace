@@ -5,7 +5,7 @@ setup(
     version='0.1',
     py_modules=['ml2ovn_trace'],
     install_requires=[
-        'Click',
+        'click',
         'openstacksdk',
     ],
     entry_points='''
