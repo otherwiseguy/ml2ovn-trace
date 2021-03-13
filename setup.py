@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='ml2ovn-trace',
     version='0.1',
-    py_modules=['ml2ovn_trace'],
+    packages=['ml2ovn_trace'],
     install_requires=[
         'click',
         'openstacksdk',
